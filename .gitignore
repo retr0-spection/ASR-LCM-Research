@@ -1,0 +1,5 @@
+venv/
+LibriTTS/
+training_data/
+train-clean-100.tar.gz
+VCTK-Corpus-0.92.zip
