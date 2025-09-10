@@ -28,19 +28,20 @@ def upsample_24kHzcodes_with_mbd(encoded_frames_12khz):
 
     return reconstructed_wav_24khz, encoded_frames_24khz[0][0]
 
-def generate_using_mbd(encoded_frames):
+def generate_using_mbd(encoded_frames, clip_name):
     with torch.no_grad():
         reconstructed_wav_24khz, encoded_frames_24khz = upsample_24kHzcodes_with_mbd(encoded_frames)
 
+    filename =  f'upsampled_mbd_audio/{clip_name}_mbd_upsampled_24000'
     audio_write(
-        'mbd_generated_from_codes',
+       filename, # save to large storage
         reconstructed_wav_24khz.squeeze(0).cpu(),
         mbd.sample_rate,
         strategy="loudness",
         loudness_compressor=True
     )
 
-    print(f"[INFO] Audio generated and saved to 'mbd_generated_from_codes.wav'.")
+    print(f"[INFO] Audio generated and saved to '{filename}'.")
 
     return reconstructed_wav_24khz, encoded_frames_24khz
 
@@ -52,23 +53,28 @@ df = pd.DataFrame({'filename':[],'filepath':[]})
 total_files = sum(1 for _, _, filenames in os.walk(training_data_path) for f in filenames if 'downsampled' in f)
 processed = 0
 
+# --- Inside your coding loop ---
 for dirpath, dirnames, filenames in os.walk(training_data_path):
     for filename in filenames:
-        target = f"{dirpath}{filename}"
         if 'downsampled' in filename:
-            print(f"[PROCESSING] {filename} ({processed+1}/{total_files})")
-            degraded_codes, sr = get_degraded_codes(target)
-            reconstructed_wav, upsampled_codes = generate_using_mbd(degraded_codes)
-            # save for each clip
             clip_name = ''.join([x + "_" if i < 2 else x for i, x in enumerate(filename.split('_')[:3])])
+            print(f"[PROCESSING] {filename} ({processed+1}/{total_files})")
+
+            degraded_codes, sr = get_degraded_codes(os.path.join(dirpath, filename))
+
+            # generate teacher codes using MBD upsample
+            reconstructed_wav, upsampled_encoded_frames = generate_using_mbd(degraded_codes, clip_name)
+
+            # Save **full teacher encoded frame**, not just first tensor
             clip_path = f"codes/{clip_name}.pt"
             torch.save({
-                "degraded": degraded_codes.cpu(),
-                "teacher": upsampled_codes.cpu()
+                "degraded": degraded_codes.cpu(),                # [seq_len, n_codebooks]
+                "teacher": upsampled_encoded_frames.cpu()        # full RVQ frame
             }, clip_path)
+
             new_entry = pd.DataFrame({'filename': [filename], 'filepath':[clip_path]})
             df = pd.concat([df, new_entry], ignore_index=True)
-            df.to_csv('code_data.csv',  index=False, na_rep='N/A')
+            df.to_csv('code_data.csv', index=False, na_rep='N/A')
             processed += 1
             print(f"[SAVED] {clip_path} (processed {processed}/{total_files})")
 

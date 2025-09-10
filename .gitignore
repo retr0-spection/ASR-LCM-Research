@@ -2,7 +2,10 @@ venv/
 LibriTTS/
 training_data/
 codes/
+upsampled_mbd_audio/
+checkpoints/
 code_data.csv
 train-clean-100.tar.gz
 VCTK-Corpus-0.92.zip
 .DS_Store
+training_data.zip
