@@ -1,0 +1,156 @@
+Activating virtual environment...
+Starting Latent Consistency Model training (DDP mode)
+Job Node: mscluster106.ms.wits.ac.za
+GPUs available: 
+Thu Oct 16 12:02:32 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 565.57.01              Driver Version: 565.57.01      CUDA Version: 12.7     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Quadro RTX 8000                Off |   00000000:17:00.0 Off |                  Off |
+| 37%   56C    P5             40W /  260W |       4MiB /  49152MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   1  Quadro RTX 8000                Off |   00000000:73:00.0 Off |                  Off |
+| 40%   58C    P8             28W /  260W |       4MiB /  49152MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+[2025-10-16 12:02:35,262] torch.distributed.run: [WARNING] master_addr is only used for static rdzv_backend and when rdzv_endpoint is not specified.
+mscluster106:3314590:3314590 [0] NCCL INFO Bootstrap : Using enp0s31f6:10.100.14.106<0>
+mscluster106:3314590:3314590 [0] NCCL INFO NET/Plugin : Plugin load (libnccl-net.so) returned 2 : libnccl-net.so: cannot open shared object file: No such file or directory
+mscluster106:3314590:3314590 [0] NCCL INFO NET/Plugin : No plugin found, using internal implementation
+mscluster106:3314590:3314590 [0] NCCL INFO cudaDriverVersion 12070
+NCCL version 2.18.1+cuda12.1
+mscluster106:3314591:3314591 [1] NCCL INFO cudaDriverVersion 12070
+mscluster106:3314591:3314591 [1] NCCL INFO Bootstrap : Using enp0s31f6:10.100.14.106<0>
+mscluster106:3314591:3314591 [1] NCCL INFO NET/Plugin : Plugin load (libnccl-net.so) returned 2 : libnccl-net.so: cannot open shared object file: No such file or directory
+mscluster106:3314591:3314591 [1] NCCL INFO NET/Plugin : No plugin found, using internal implementation
+mscluster106:3314590:3314640 [0] NCCL INFO NET/IB : No device found.
+mscluster106:3314590:3314640 [0] NCCL INFO NET/Socket : Using [0]enp0s31f6:10.100.14.106<0>
+mscluster106:3314590:3314640 [0] NCCL INFO Using network Socket
+mscluster106:3314591:3314641 [1] NCCL INFO NET/IB : No device found.
+mscluster106:3314591:3314641 [1] NCCL INFO NET/Socket : Using [0]enp0s31f6:10.100.14.106<0>
+mscluster106:3314591:3314641 [1] NCCL INFO Using network Socket
+mscluster106:3314591:3314641 [1] NCCL INFO Setting affinity for GPU 1 to 0fffff,ff000000,0fffffff
+mscluster106:3314590:3314640 [0] NCCL INFO Setting affinity for GPU 0 to 0fffff,ff000000,0fffffff
+mscluster106:3314590:3314640 [0] NCCL INFO Channel 00/04 :    0   1
+mscluster106:3314591:3314641 [1] NCCL INFO Trees [0] -1/-1/-1->1->0 [1] 0/-1/-1->1->-1 [2] -1/-1/-1->1->0 [3] 0/-1/-1->1->-1
+mscluster106:3314590:3314640 [0] NCCL INFO Channel 01/04 :    0   1
+mscluster106:3314591:3314641 [1] NCCL INFO P2P Chunksize set to 524288
+mscluster106:3314590:3314640 [0] NCCL INFO Channel 02/04 :    0   1
+mscluster106:3314590:3314640 [0] NCCL INFO Channel 03/04 :    0   1
+mscluster106:3314590:3314640 [0] NCCL INFO Trees [0] 1/-1/-1->0->-1 [1] -1/-1/-1->0->1 [2] 1/-1/-1->0->-1 [3] -1/-1/-1->0->1
+mscluster106:3314590:3314640 [0] NCCL INFO P2P Chunksize set to 524288
+mscluster106:3314590:3314640 [0] NCCL INFO Channel 00/0 : 0[17000] -> 1[73000] via P2P/IPC
+mscluster106:3314591:3314641 [1] NCCL INFO Channel 00/0 : 1[73000] -> 0[17000] via P2P/IPC
+mscluster106:3314590:3314640 [0] NCCL INFO Channel 01/0 : 0[17000] -> 1[73000] via P2P/IPC
+mscluster106:3314591:3314641 [1] NCCL INFO Channel 01/0 : 1[73000] -> 0[17000] via P2P/IPC
+mscluster106:3314590:3314640 [0] NCCL INFO Channel 02/0 : 0[17000] -> 1[73000] via P2P/IPC
+mscluster106:3314591:3314641 [1] NCCL INFO Channel 02/0 : 1[73000] -> 0[17000] via P2P/IPC
+mscluster106:3314590:3314640 [0] NCCL INFO Channel 03/0 : 0[17000] -> 1[73000] via P2P/IPC
+mscluster106:3314591:3314641 [1] NCCL INFO Channel 03/0 : 1[73000] -> 0[17000] via P2P/IPC
+mscluster106:3314590:3314640 [0] NCCL INFO Connected all rings
+mscluster106:3314591:3314641 [1] NCCL INFO Connected all rings
+mscluster106:3314590:3314640 [0] NCCL INFO Connected all trees
+mscluster106:3314591:3314641 [1] NCCL INFO Connected all trees
+mscluster106:3314591:3314641 [1] NCCL INFO threadThresholds 8/8/64 | 16/8/64 | 512 | 512
+mscluster106:3314591:3314641 [1] NCCL INFO 4 coll channels, 0 nvls channels, 4 p2p channels, 4 p2p channels per peer
+mscluster106:3314590:3314640 [0] NCCL INFO threadThresholds 8/8/64 | 16/8/64 | 512 | 512
+mscluster106:3314590:3314640 [0] NCCL INFO 4 coll channels, 0 nvls channels, 4 p2p channels, 4 p2p channels per peer
+mscluster106:3314590:3314640 [0] NCCL INFO comm 0x845dc20 rank 0 nranks 2 cudaDev 0 busId 17000 commId 0x75f188c05132cb41 - Init COMPLETE
+mscluster106:3314591:3314641 [1] NCCL INFO comm 0x8a4a380 rank 1 nranks 2 cudaDev 1 busId 73000 commId 0x75f188c05132cb41 - Init COMPLETE
+[DDP] Initialized with 2 processes
+Detected 32 codebooks from dataset sample
+[DDP] Model wrapped successfully
+2025-10-16 12:02:42 | INFO | Logging to /datasets/onailana/checkpoints3/train_20251016_120242_rank0.log (rank 0)
+2025-10-16 12:02:42 | INFO | Logging to /datasets/onailana/checkpoints3/train_20251016_120242_rank1.log (rank 1)
+/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/utils/weight_norm.py:30: UserWarning: torch.nn.utils.weight_norm is deprecated in favor of torch.nn.utils.parametrizations.weight_norm.
+  warnings.warn("torch.nn.utils.weight_norm is deprecated in favor of torch.nn.utils.parametrizations.weight_norm.")
+/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/utils/weight_norm.py:30: UserWarning: torch.nn.utils.weight_norm is deprecated in favor of torch.nn.utils.parametrizations.weight_norm.
+  warnings.warn("torch.nn.utils.weight_norm is deprecated in favor of torch.nn.utils.parametrizations.weight_norm.")
+2025-10-16 12:02:47 | INFO | No checkpoint found; starting fresh
+2025-10-16 12:02:47 | INFO | Starting training: epochs=1500, per_step_batch_size=2, accum_steps=4, ddp=True
+2025-10-16 12:02:47 | INFO | No checkpoint found; starting fresh
+wandb: Currently logged in as: ratinailana (ratinailana-university-of-the-witwatersrand) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run Latent-Consistency-Distillation
+wandb: Tracking run with wandb version 0.22.1
+wandb: Run data is saved locally in /home-mscluster/onailana/ASR-LCM-Research/scripts/wandb/run-20251016_120248-Latent-Consistency-Distillation
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run Latent-Consistency-Distillation
+wandb: ⭐️ View project at https://wandb.ai/ratinailana-university-of-the-witwatersrand/lcm-distill
+wandb: 🚀 View run at https://wandb.ai/ratinailana-university-of-the-witwatersrand/lcm-distill/runs/Latent-Consistency-Distillation
+2025-10-16 12:02:50 | INFO | Starting training: epochs=1500, per_step_batch_size=2, accum_steps=4, ddp=True
+/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/modules/transformer.py:380: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. (Triggered internally at ../aten/src/ATen/NestedTensorImpl.cpp:178.)
+  output = torch._nested_tensor_from_mask(output, src_key_padding_mask.logical_not(), mask_check=False)
+/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/modules/transformer.py:380: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. (Triggered internally at ../aten/src/ATen/NestedTensorImpl.cpp:178.)
+  output = torch._nested_tensor_from_mask(output, src_key_padding_mask.logical_not(), mask_check=False)
+2025-10-16 13:27:02 | INFO | Epoch 1: train loss=5.488275 ce=4.963284 stft=0.961596 wf=0.088386 | val: {'loss': 6.970868041183775, 'ce': 6.297347112996689, 'stft': 1.2303614332186465, 'waveform': 0.11668090315054584}
+2025-10-16 14:54:13 | INFO | Epoch 2: train loss=4.750496 ce=4.443843 stft=0.551057 wf=0.062250 | val: {'loss': 6.720647344526077, 'ce': 6.1894333188896935, 'stft': 0.9423195542089197, 'waveform': 0.12010882548149059}
+2025-10-16 16:22:21 | INFO | Epoch 3: train loss=4.642214 ce=4.391235 stft=0.442556 wf=0.059401 | val: {'loss': 6.676868565035182, 'ce': 6.164440837127484, 'stft': 0.9047673711713576, 'waveform': 0.12008810990693554}
+2025-10-16 17:49:21 | INFO | Epoch 4: train loss=4.607766 ce=4.377153 stft=0.403075 wf=0.058150 | val: {'loss': 6.680213776645282, 'ce': 6.151225715283527, 'stft': 0.9504040850708816, 'waveform': 0.10757277027660647}
+2025-10-16 19:16:14 | INFO | Epoch 5: train loss=4.579928 ce=4.360258 stft=0.381876 wf=0.057465 | val: {'loss': 6.665970353890729, 'ce': 6.1432919533836925, 'stft': 0.9388363061361755, 'waveform': 0.10652120223897972}
+2025-10-16 20:43:52 | INFO | Epoch 6: train loss=4.561624 ce=4.348953 stft=0.368416 wf=0.056925 | val: {'loss': 6.632472966680464, 'ce': 6.1361496274834435, 'stft': 0.8878495172159562, 'waveform': 0.10479817800963952}
+2025-10-16 22:10:34 | INFO | Epoch 7: train loss=4.556259 ce=4.348407 stft=0.359012 wf=0.056692 | val: {'loss': 6.629148369593336, 'ce': 6.13098872102649, 'stft': 0.8913086139603167, 'waveform': 0.10501136527156198}
+2025-10-16 23:37:22 | INFO | Epoch 8: train loss=4.543315 ce=4.339191 stft=0.351871 wf=0.056378 | val: {'loss': 6.61979746029077, 'ce': 6.124184311620447, 'stft': 0.8863573895384934, 'waveform': 0.10486921095690191}
+2025-10-17 01:04:06 | INFO | Epoch 9: train loss=4.535954 ce=4.334258 stft=0.347256 wf=0.056135 | val: {'loss': 6.6163414961454885, 'ce': 6.120415491773593, 'stft': 0.887225119483392, 'waveform': 0.1046272682038364}
+2025-10-17 02:30:35 | INFO | Epoch 10: train loss=4.536039 ce=4.335648 stft=0.344732 wf=0.056051 | val: {'loss': 6.620603851924669, 'ce': 6.117463168718957, 'stft': 0.9009349898786734, 'waveform': 0.10534678705480714}
+2025-10-17 03:57:02 | INFO | Epoch 11: train loss=4.524336 ce=4.326078 stft=0.340637 wf=0.055880 | val: {'loss': 6.615510447925289, 'ce': 6.1153038984892385, 'stft': 0.8953538098872103, 'waveform': 0.10505915635468945}
+2025-10-17 05:23:44 | INFO | Epoch 12: train loss=4.523560 ce=4.326845 stft=0.337619 wf=0.055812 | val: {'loss': 6.612510024317053, 'ce': 6.115290963886589, 'stft': 0.8897144241838266, 'waveform': 0.10472293879022661}
+2025-10-17 06:50:17 | INFO | Epoch 13: train loss=4.509238 ce=4.314423 stft=0.334076 wf=0.055553 | val: {'loss': 6.615106645798841, 'ce': 6.115459113721027, 'stft': 0.8936038996210162, 'waveform': 0.10569157505666973}
+2025-10-17 08:17:12 | INFO | Epoch 14: train loss=4.509777 ce=4.316140 stft=0.331844 wf=0.055430 | val: {'loss': 6.614657976769454, 'ce': 6.115506810068295, 'stft': 0.8924376632993585, 'waveform': 0.10586482168033423}
+2025-10-17 09:44:33 | INFO | Epoch 15: train loss=4.503494 ce=4.311359 stft=0.329025 wf=0.055244 | val: {'loss': 6.616349176065811, 'ce': 6.115624029904802, 'stft': 0.8956084598768626, 'waveform': 0.105841617710543}
+2025-10-17 11:11:35 | INFO | Epoch 16: train loss=4.506756 ce=4.314828 stft=0.328544 wf=0.055311 | val: {'loss': 6.615813198468543, 'ce': 6.117243280473923, 'stft': 0.8914218927850787, 'waveform': 0.10571929476908501}
+2025-10-17 12:38:34 | INFO | Epoch 17: train loss=4.497570 ce=4.307062 stft=0.325791 wf=0.055224 | val: {'loss': 6.614047625206954, 'ce': 6.116976908500621, 'stft': 0.8884082314194433, 'waveform': 0.105732355686213}
+2025-10-17 14:05:09 | INFO | Epoch 18: train loss=4.494126 ce=4.304187 stft=0.324733 wf=0.055145 | val: {'loss': 6.612527809395695, 'ce': 6.116985396833609, 'stft': 0.8851136466525248, 'waveform': 0.10597043321622128}
+2025-10-17 15:31:16 | INFO | Epoch 19: train loss=4.491111 ce=4.302160 stft=0.322910 wf=0.054992 | val: {'loss': 6.60988510839197, 'ce': 6.117303103011175, 'stft': 0.8794292929946192, 'waveform': 0.10573446513801221}
+2025-10-17 16:56:59 | INFO | Epoch 20: train loss=4.489952 ce=4.301623 stft=0.321696 wf=0.054960 | val: {'loss': 6.602859193915563, 'ce': 6.118169317182327, 'stft': 0.8647141614497103, 'waveform': 0.10466632464074141}
+2025-10-17 18:22:32 | INFO | Epoch 21: train loss=4.491006 ce=4.302794 stft=0.321528 wf=0.054894 | val: {'loss': 6.606339006234479, 'ce': 6.1200137106788075, 'stft': 0.8676659792464301, 'waveform': 0.10498399292396395}
+2025-10-17 19:49:06 | INFO | Epoch 22: train loss=4.486160 ce=4.298269 stft=0.320911 wf=0.054870 | val: {'loss': 6.607994231167218, 'ce': 6.1204025571709435, 'stft': 0.8701400251578022, 'waveform': 0.10504341125488281}
+2025-10-17 21:16:28 | INFO | Epoch 23: train loss=4.485392 ce=4.297954 stft=0.320066 wf=0.054810 | val: {'loss': 6.606254122904595, 'ce': 6.121307170943709, 'stft': 0.8635371126086506, 'waveform': 0.10635686710180826}
+2025-10-17 22:42:10 | INFO | Epoch 24: train loss=4.491881 ce=4.304041 stft=0.320889 wf=0.054791 | val: {'loss': 6.608707251138245, 'ce': 6.122758271678394, 'stft': 0.8651585863126035, 'waveform': 0.10673937260709851}
+2025-10-18 00:08:40 | INFO | Epoch 25: train loss=4.485561 ce=4.297871 stft=0.320603 wf=0.054777 | val: {'loss': 6.608634493998345, 'ce': 6.122907828021523, 'stft': 0.8642713534121482, 'waveform': 0.10718186485846311}
+2025-10-18 01:33:51 | INFO | Epoch 26: train loss=4.487558 ce=4.299805 stft=0.320682 wf=0.054825 | val: {'loss': 6.609651477131623, 'ce': 6.123397726096854, 'stft': 0.8654475938405423, 'waveform': 0.10706072927310767}
+2025-10-18 03:00:08 | INFO | Epoch 27: train loss=4.471785 ce=4.284904 stft=0.319180 wf=0.054584 | val: {'loss': 6.617092107305464, 'ce': 6.124546480494619, 'stft': 0.8769482745240066, 'waveform': 0.10814294120333842}
+2025-10-18 04:26:01 | INFO | Epoch 28: train loss=4.472488 ce=4.285317 stft=0.319695 wf=0.054646 | val: {'loss': 6.61876713834851, 'ce': 6.125022231348303, 'stft': 0.8790612631286217, 'waveform': 0.10842814666545944}
+2025-10-18 05:50:37 | INFO | Epoch 29: train loss=4.477515 ce=4.289777 stft=0.320735 wf=0.054741 | val: {'loss': 6.617447808878311, 'ce': 6.126180686698055, 'stft': 0.8740388983922289, 'waveform': 0.10849539649407595}
+2025-10-18 07:16:13 | INFO | Epoch 30: train loss=4.475212 ce=4.287229 stft=0.321254 wf=0.054713 | val: {'loss': 6.61231196321399, 'ce': 6.127974150196606, 'stft': 0.859434519382502, 'waveform': 0.10924091718054765}
+2025-10-18 08:42:29 | INFO | Epoch 31: train loss=4.475324 ce=4.287021 stft=0.321770 wf=0.054835 | val: {'loss': 6.616146264486755, 'ce': 6.128432924384313, 'stft': 0.8662617664463472, 'waveform': 0.10916504007301583}
+2025-10-18 10:07:15 | INFO | Epoch 32: train loss=4.487688 ce=4.298292 stft=0.323851 wf=0.054941 | val: {'loss': 6.612973648980753, 'ce': 6.129054593724131, 'stft': 0.858081337631933, 'waveform': 0.1097565455152499}
+2025-10-18 11:31:37 | INFO | Epoch 33: train loss=4.480906 ce=4.291789 stft=0.323339 wf=0.054893 | val: {'loss': 6.613299035078643, 'ce': 6.130756706591473, 'stft': 0.8555604037859582, 'waveform': 0.1095234700386098}
+slurmstepd-mscluster106: error: *** JOB 163477 ON mscluster106 CANCELLED AT 2025-10-18T12:02:55 DUE TO TIME LIMIT ***
+[2025-10-18 12:02:55,923] torch.distributed.elastic.agent.server.api: [WARNING] Received Signals.SIGTERM death signal, shutting down workers
+[2025-10-18 12:02:55,924] torch.distributed.elastic.multiprocessing.api: [WARNING] Sending process 3314590 closing signal SIGTERM
+[2025-10-18 12:02:55,924] torch.distributed.elastic.multiprocessing.api: [WARNING] Sending process 3314591 closing signal SIGTERM
+Traceback (most recent call last):
+  File "/home-mscluster/onailana/miniconda3/envs/env/bin/torchrun", line 7, in <module>
+    sys.exit(main())
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+    return f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 806, in main
+    run(args)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 797, in run
+    elastic_launch(
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 255, in launch_agent
+    result = agent.run()
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/metrics/api.py", line 124, in wrapper
+    result = f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 736, in run
+    result = self._invoke_run(role)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 877, in _invoke_run
+    time.sleep(monitor_interval)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 62, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+torch.distributed.elastic.multiprocessing.api.SignalException: Process 3314578 got signal: 15

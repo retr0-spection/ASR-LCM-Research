@@ -1,0 +1,36 @@
+Virt env active
+Training LCM Model
+Traceback (most recent call last):
+  File "/home-mscluster/onailana/ASR-LCM-Research/training3.py", line 5, in <module>
+    from lcm import train_lcm, collate_fn, LCM_MCB
+ImportError: cannot import name 'train_lcm' from 'lcm' (/home-mscluster/onailana/ASR-LCM-Research/lcm.py)
+[2025-10-28 10:59:08,989] torch.distributed.elastic.multiprocessing.api: [ERROR] failed (exitcode: 1) local_rank: 0 (pid: 1115209) of binary: /home-mscluster/onailana/miniconda3/envs/env/bin/python3.9
+Traceback (most recent call last):
+  File "/home-mscluster/onailana/miniconda3/envs/env/bin/torchrun", line 7, in <module>
+    sys.exit(main())
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+    return f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 806, in main
+    run(args)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 797, in run
+    elastic_launch(
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/home-mscluster/onailana/ASR-LCM-Research/training3.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-10-28_10:59:08
+  host      : mscluster66.ms.wits.ac.za
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1115209)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

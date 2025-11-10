@@ -3,12 +3,19 @@
 training_final.py
 
 DDP-safe LCM training with:
- - token cross-entropy (backprop)
- - waveform L1 + multi-resolution STFT (perceptual metrics; detached)
+ - token cross entropy (backprop)
+ - waveform L1 + multi resolution STFT (perceptual metrics; detached)
  - Encodec decode under no_grad()
  - AMP (autocast + GradScaler)
  - gradient accumulation with DDP no_sync()
  - synchronized OOM handling across ranks (reduces batch size and restarts epoch)
+ - latent-space denoising for noise suppression
+
+Fixes applied:
+ - safe_stft: force float32, pad short signals, CPU fallback on cuFFT internal errors
+ - compute STFT/waveform losses with autocast disabled
+ - ensure Encodec decode outputs moved to device and cast to float32
+ - set PYTORCH_CUDA_ALLOC_CONF default to reduce fragmentation if unset
 """
 import os
 import sys
@@ -29,6 +36,11 @@ from torch.utils.data.distributed import DistributedSampler
 
 import wandb
 from encodec import EncodecModel
+
+# Reduce fragmentation defaults (honors user env if already set)
+if "PYTORCH_CUDA_ALLOC_CONF" not in os.environ:
+    # This is a reasonable default to reduce fragmentation (can be tuned).
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
 
 # ---------------------------
 # Utils: DDP init & exception hook
@@ -114,7 +126,7 @@ class LCM_MCB(nn.Module):
         return torch.stack(logits_list, dim=-1)  # [B, S, vocab, n_codebooks]
 
 # ---------------------------
-# Losses
+# Losses (safe STFT)
 # ---------------------------
 class MultiResolutionSTFTLoss(nn.Module):
     def __init__(self, fft_sizes=[512, 1024, 2048], hop_sizes=[128, 256, 512], win_lengths=[512, 1024, 2048]):
@@ -123,17 +135,65 @@ class MultiResolutionSTFTLoss(nn.Module):
         self.hop_sizes = hop_sizes
         self.win_lengths = win_lengths
 
+    def safe_stft(self, x, n_fft, hop, win, device):
+        """
+        Run STFT in float32. If cuFFT fails, fallback to CPU.
+        Pads signals shorter than n_fft.
+        x: [B, L] or [L]
+        """
+        # ensure contiguous float32
+        x = x.contiguous().to(dtype=torch.float32)
+        # if last dimension is length, pad if shorter than n_fft
+        if x.dim() == 1:
+            length = x.size(0)
+        else:
+            length = x.size(-1)
+        if length < n_fft:
+            pad_amount = n_fft - length
+            # F.pad expects (left, right) for 1D; for batch [B, L] use (0, pad)
+            x = F.pad(x, (0, pad_amount))
+
+        # create window on the same device/dtype where possible
+        try:
+            win_tensor = torch.hann_window(win, device=device, dtype=torch.float32)
+        except Exception:
+            # if device window creation fails (e.g., device bad), fallback to cpu window
+            win_tensor = torch.hann_window(win, device='cpu', dtype=torch.float32).to(device)
+
+        try:
+            # Try running STFT on the same device (GPU if available)
+            return torch.stft(x, n_fft=n_fft, hop_length=hop, win_length=win, window=win_tensor, return_complex=True)
+        except RuntimeError as e:
+            msg = str(e).lower()
+            # catch CUFFT internal errors and fallback to CPU implementation
+            if "cufft" in msg or "cufft_internal" in msg or "cufft_internal_error" in msg or "cufft_internal_error" in str(e):
+                # fallback to cpu; make sure to move window and data to cpu
+                cpu_x = x.cpu()
+                cpu_win = torch.hann_window(win, device='cpu', dtype=torch.float32)
+                X_cpu = torch.stft(cpu_x, n_fft=n_fft, hop_length=hop, win_length=win, window=cpu_win, return_complex=True)
+                return X_cpu.to(device)
+            else:
+                # other runtime errors propagate
+                raise
+
     def forward(self, x, y):
+        # canonicalize shapes: expect [B, 1, L] or [B, L]
         x = x.squeeze(1) if x.dim() == 3 else x
         y = y.squeeze(1) if y.dim() == 3 else y
+        # move to float32 early (safe_stft also enforces)
+        x = x.contiguous().to(dtype=torch.float32)
+        y = y.contiguous().to(dtype=torch.float32)
+
         device = x.device
         loss = 0.0
         for n_fft, hop, win in zip(self.fft_sizes, self.hop_sizes, self.win_lengths):
-            win_tensor = torch.hann_window(win, device=device)
-            X = torch.stft(x, n_fft=n_fft, hop_length=hop, win_length=win, window=win_tensor, return_complex=True)
-            Y = torch.stft(y, n_fft=n_fft, hop_length=hop, win_length=win, window=win_tensor, return_complex=True)
+            # perform stft with safe wrapper (handles padding, dtype, cpu fallback)
+            X = self.safe_stft(x, n_fft=n_fft, hop=hop, win=win, device=device)
+            Y = self.safe_stft(y, n_fft=n_fft, hop=hop, win=win, device=device)
+
             mag_x = torch.abs(X)
             mag_y = torch.abs(Y)
+
             sc_loss = torch.norm(mag_y - mag_x, p='fro') / (torch.norm(mag_y, p='fro') + 1e-8)
             mag_loss = F.l1_loss(torch.log1p(mag_x), torch.log1p(mag_y))
             loss += sc_loss + mag_loss
@@ -144,7 +204,27 @@ class WaveformL1Loss(nn.Module):
         super().__init__()
         self.l1 = nn.L1Loss()
     def forward(self, x, y):
+        # ensure float32
+        x = x.contiguous().to(dtype=torch.float32)
+        y = y.contiguous().to(dtype=torch.float32)
         return self.l1(x, y)
+
+# ---------------------------
+# Latent denoising utility
+# ---------------------------
+def denoise_latents(logits, temperature=0.7, min_prob=0.05):
+    """
+    Suppress low-confidence token logits.
+    logits: [B, S, vocab, n_codebooks]
+    temperature: softmax temperature to sharpen
+    min_prob: minimum probability to keep a token
+    """
+    probs = F.softmax(logits / temperature, dim=2)
+    probs[probs < min_prob] = 0.0
+    probs = probs / (probs.sum(dim=2, keepdim=True) + 1e-8)
+    tokens = probs.argmax(dim=2)
+    # reshape to [B, n_codebooks, S]
+    return tokens.transpose(1, 2)
 
 # ---------------------------
 # Checkpoint utils
@@ -188,13 +268,23 @@ def validate_one_epoch(val_loader, model, device, encodec_model, n_codebooks, la
                 ce += F.cross_entropy(logits[..., i].transpose(1,2), teacher[..., i], reduction='mean')
             ce = ce / n_codebooks
 
-            pred_tokens = torch.argmax(logits, dim=2).transpose(1,2)
+            pred_tokens = denoise_latents(logits)  # <-- denoising applied
             teacher_codes = teacher.transpose(1,2)
-            pred_wav = encodec_model.decode([(pred_tokens, None)])
-            tgt_wav = encodec_model.decode([(teacher_codes, None)])
 
-            stft_l = mrstft(pred_wav, tgt_wav)
-            wf_l = wf_fn(pred_wav, tgt_wav)
+            # ensure decode outputs are tensors on device and float32
+            pred_wav = encodec_model.decode([(pred_tokens, None)])
+            teacher_wav = encodec_model.decode([(teacher_codes, None)])
+            if not isinstance(pred_wav, torch.Tensor):
+                pred_wav = torch.tensor(pred_wav)
+            if not isinstance(teacher_wav, torch.Tensor):
+                teacher_wav = torch.tensor(teacher_wav)
+            pred_wav = pred_wav.to(device=device, dtype=torch.float32, non_blocking=True)
+            teacher_wav = teacher_wav.to(device=device, dtype=torch.float32, non_blocking=True)
+
+            # compute stft/waveform losses in full precision (disable autocast)
+            with torch.cuda.amp.autocast(enabled=False):
+                stft_l = mrstft(pred_wav, teacher_wav)
+                wf_l = wf_fn(pred_wav, teacher_wav)
             loss = ce + lambda_waveform * wf_l + lambda_stft * stft_l
 
             bsz = degraded.size(0)
@@ -225,7 +315,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
     if not hasattr(args, "accum_steps"):
         args.accum_steps = 4
 
-    # helper to build train loader (recreated if batch size changes)
     def make_train_loader():
         return DataLoader(dataset, batch_size=args.batch_size, sampler=train_sampler, collate_fn=collate_fn)
 
@@ -233,7 +322,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
     val_loader = DataLoader(val_dataset, batch_size=args.val_batch_size, sampler=DistributedSampler(val_dataset) if is_ddp and val_dataset is not None else None, collate_fn=collate_fn) if val_dataset is not None else None
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=getattr(args, "weight_decay", 0.0))
-    # lambda scheduler: warmup then linear decay
     warmup_steps = getattr(args, "warmup_steps", 500)
     def lr_lambda(step):
         if step < warmup_steps:
@@ -248,7 +336,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
     stft_fn = MultiResolutionSTFTLoss()
     wf_fn = WaveformL1Loss()
 
-    # resume
     start_epoch = 0
     if getattr(args, "resume", False):
         ckpt = latest_checkpoint(args.checkpoint_dir)
@@ -264,7 +351,7 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
             logger.info("No checkpoint found; starting fresh")
 
     if rank == 0:
-        wandb.init(project=getattr(args, "wandb_project", "lcm-distill"), id="Latent-Consistency-Distillation", config=vars(args), resume="allow" if getattr(args, "resume", False) else None)
+        wandb.init(project=getattr(args, "wandb_project", "lcm-distill"), id="Latent-Consistency-Distillation-Denoising", config=vars(args), resume="allow" if getattr(args, "resume", False) else None)
         wandb.watch(model, log="gradients" if getattr(args, "log_grads", False) else None)
 
     scaler = torch.cuda.amp.GradScaler()
@@ -276,49 +363,59 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
         if is_ddp:
             train_sampler.set_epoch(epoch) if train_sampler is not None else None
         model.train()
-
-        # Create fresh loader in case it was recreated after OOM
         train_loader = make_train_loader()
 
         epoch_loss = epoch_ce = epoch_stft = epoch_wf = epoch_count = 0.0
         restart_epoch = False
 
         optimizer.zero_grad()
-        # iterate with index to enable no_sync decisions
         for batch_idx, (degraded, teacher, mask) in enumerate(train_loader):
             degraded, teacher, mask = degraded.to(device), teacher.to(device), mask.to(device)
 
-            # choose no_sync context for DDP when not stepping this iter
             use_no_sync = is_ddp and ((batch_idx + 1) % accum_steps != 0)
             ddp_ctx = model.no_sync if use_no_sync else nullcontext
 
             try:
                 with ddp_ctx():
+                    # compute model + CE under autocast (fine)
                     with torch.cuda.amp.autocast():
-                        logits = model(degraded, attention_mask=mask)  # [B, S, vocab, n_codebooks]
+                        logits = model(degraded, attention_mask=mask)
                         ce_loss = 0.0
                         for i in range(n_codebooks):
                             ce_loss += F.cross_entropy(logits[..., i].transpose(1,2), teacher[..., i], reduction='mean')
                         ce_loss = ce_loss / float(n_codebooks)
 
-                        # decode under no_grad()
-                        pred_tokens = torch.argmax(logits, dim=2).transpose(1,2)
+                        pred_tokens = denoise_latents(logits)  # <-- latent denoising
                         teacher_codes = teacher.transpose(1,2)
+
+                        # Encodec decode done under no_grad (but could be under autocast)
                         with torch.no_grad():
                             pred_wav = encodec_model.decode([(pred_tokens, None)])
                             teacher_wav = encodec_model.decode([(teacher_codes, None)])
 
-                        # compute audio losses (detached from autograd)
-                        stft_loss = stft_fn(pred_wav, teacher_wav).detach()
-                        wf_loss = wf_fn(pred_wav, teacher_wav).detach()
+                    # Ensure decoded audio tensors are real torch tensors on the correct device/dtype
+                    if not isinstance(pred_wav, torch.Tensor):
+                        pred_wav = torch.tensor(pred_wav)
+                    if not isinstance(teacher_wav, torch.Tensor):
+                        teacher_wav = torch.tensor(teacher_wav)
+                    pred_wav = pred_wav.to(device=device, dtype=torch.float32, non_blocking=True)
+                    teacher_wav = teacher_wav.to(device=device, dtype=torch.float32, non_blocking=True)
 
-                        # combine losses but scale CE for accumulation
-                        loss = ce_loss + args.lambda_waveform * wf_loss + args.lambda_stft * stft_loss
-                        loss_scaled = loss / accum_steps
+                    # compute STFT and waveform losses in full precision (disable autocast)
+                    with torch.cuda.amp.autocast(enabled=False):
+                        stft_loss = stft_fn(pred_wav, teacher_wav)
+                        wf_loss = wf_fn(pred_wav, teacher_wav)
 
+                    # If you still want these perceptual losses detached (as earlier), detach here
+                    stft_loss = stft_loss.detach()
+                    wf_loss = wf_loss.detach()
+
+                    loss = ce_loss + args.lambda_waveform * wf_loss + args.lambda_stft * stft_loss
+                    loss_scaled = loss / accum_steps
+
+                    # backward outside autocast (scale handles it)
                     scaler.scale(loss_scaled).backward()
 
-                # Step when accumulation boundary reached
                 is_last_step = (batch_idx + 1 == len(train_loader))
                 if ((batch_idx + 1) % accum_steps == 0) or is_last_step:
                     scaler.step(optimizer)
@@ -334,19 +431,15 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
                 epoch_count += bsz
 
             except RuntimeError as e:
-                # Detect OOM
                 oom = ("out of memory" in str(e).lower()) or ("cuda out of memory" in str(e).lower())
                 if not oom:
+                    # re-raise non OOM runtime errors (including unexpected cuFFT errors we've tried to handle)
                     raise
 
-                # free what we can locally
                 logging.warning(f"OOM at epoch {epoch} batch {batch_idx}: {e}")
                 torch.cuda.empty_cache()
-
-                # signal local OOM (1) or success (0)
                 local_oom = torch.tensor([1], device=device, dtype=torch.int32)
 
-                # reduce across ranks to see if any rank OOMed
                 if is_ddp:
                     global_oom = local_oom.clone()
                     dist.all_reduce(global_oom, op=dist.ReduceOp.SUM)
@@ -355,7 +448,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
                     any_oom = True
 
                 if any_oom:
-                    # rank 0 decides the new batch size (halved)
                     if is_ddp:
                         if rank == 0:
                             new_bs = max(1, args.batch_size // 2)
@@ -368,21 +460,18 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
                         new_bs = max(1, args.batch_size // 2)
 
                     if new_bs < args.batch_size:
-                        logging.warning(f"Synchronized decision: reducing per_step_batch_size {args.per_step_batch_size} -> {new_bs}")
+                        logging.warning(f"Synchronized decision: reducing per_step_batch_size {args.batch_size} -> {new_bs}")
                         args.batch_size = new_bs
-                        # recreate loader in next epoch loop
                         restart_epoch = True
                         break
                     else:
-                        # already at 1 and still OOM -> abort training
                         logging.error("OOM at per_step_batch_size==1 on all ranks; cannot recover. Aborting.")
                         raise e
 
         if restart_epoch:
-            # continue to next epoch iteration which will rebuild loader and retry same epoch
+            # when we reduced args.batch_size we restart this epoch with new loader
             continue
 
-        # Aggregate epoch stats across ranks
         if is_ddp:
             stats = torch.tensor([epoch_loss, epoch_ce, epoch_stft, epoch_wf, epoch_count], device=device)
             dist.all_reduce(stats, op=dist.ReduceOp.SUM)
@@ -393,7 +482,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
         avg_stft = epoch_stft / epoch_count if epoch_count > 0 else 0.0
         avg_wf = epoch_wf / epoch_count if epoch_count > 0 else 0.0
 
-        # validation
         val_metrics = None
         if val_loader is not None:
             val_metrics = validate_one_epoch(val_loader, model, device, encodec_model, n_codebooks=args.n_codebooks, lambda_waveform=args.lambda_waveform, lambda_stft=args.lambda_stft, is_ddp=is_ddp)
@@ -418,3 +506,4 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
             })
 
     logger.info("Training finished")
+

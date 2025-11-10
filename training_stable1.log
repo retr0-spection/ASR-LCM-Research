@@ -1,0 +1,153 @@
+Activating virtual environment...
+Starting Latent Consistency Model training (DDP mode)
+Job Node: mscluster60.ms.wits.ac.za
+GPUs available: 
+Fri Oct 17 10:47:13 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 565.57.01              Driver Version: 565.57.01      CUDA Version: 12.7     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 3090        Off |   00000000:17:00.0 Off |                  N/A |
+| 30%   38C    P8             26W /  350W |       4MiB /  24576MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+[2025-10-17 10:47:16,983] torch.distributed.run: [WARNING] master_addr is only used for static rdzv_backend and when rdzv_endpoint is not specified.
+Detected 32 codebooks from dataset sample
+2025-10-17 10:47:22 | INFO | Logging to /datasets/onailana/checkpoints5/train_20251017_104722_rank0.log (rank 0)
+/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/utils/weight_norm.py:30: UserWarning: torch.nn.utils.weight_norm is deprecated in favor of torch.nn.utils.parametrizations.weight_norm.
+  warnings.warn("torch.nn.utils.weight_norm is deprecated in favor of torch.nn.utils.parametrizations.weight_norm.")
+2025-10-17 10:47:27 | INFO | No checkpoint found; starting fresh
+wandb: Currently logged in as: ratinailana (ratinailana-university-of-the-witwatersrand) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run Latent-Consistency-Distillation-1
+wandb: Tracking run with wandb version 0.22.1
+wandb: Run data is saved locally in /home-mscluster/onailana/ASR-LCM-Research/scripts/wandb/run-20251017_104727-Latent-Consistency-Distillation-1
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run Latent-Consistency-Distillation-1
+wandb: ⭐️ View project at https://wandb.ai/ratinailana-university-of-the-witwatersrand/lcm-distill
+wandb: 🚀 View run at https://wandb.ai/ratinailana-university-of-the-witwatersrand/lcm-distill/runs/Latent-Consistency-Distillation-1
+2025-10-17 10:47:29 | INFO | Starting training: epochs=1500, per_step_batch_size=2, accum_steps=4, ddp=False
+2025-10-17 10:47:30 | INFO | Auto-scaled losses: lambda_stft=0.5000, lambda_waveform=0.5000
+Traceback (most recent call last):
+  File "/home-mscluster/onailana/ASR-LCM-Research/training6.py", line 111, in <module>
+    main()
+  File "/home-mscluster/onailana/ASR-LCM-Research/training6.py", line 87, in main
+    train(
+  File "/home-mscluster/onailana/ASR-LCM-Research/lcm_stable.py", line 299, in train
+    stft_loss = stft_fn(pred_wav, teacher_wav).detach()
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home-mscluster/onailana/ASR-LCM-Research/lcm_stable.py", line 134, in forward
+    X = torch.stft(x, n_fft=n_fft, hop_length=hop, win_length=win, window=win_tensor, return_complex=True)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/functional.py", line 650, in stft
+    return _VF.stft(input, n_fft, hop_length, win_length, window,  # type: ignore[attr-defined]
+RuntimeError: cuFFT error: CUFFT_INTERNAL_ERROR
+2025-10-17 11:33:02 | ERROR | Uncaught exception on rank 0
+Traceback (most recent call last):
+  File "/home-mscluster/onailana/ASR-LCM-Research/training6.py", line 111, in <module>
+    main()
+  File "/home-mscluster/onailana/ASR-LCM-Research/training6.py", line 87, in main
+    train(
+  File "/home-mscluster/onailana/ASR-LCM-Research/lcm_stable.py", line 299, in train
+    stft_loss = stft_fn(pred_wav, teacher_wav).detach()
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home-mscluster/onailana/ASR-LCM-Research/lcm_stable.py", line 134, in forward
+    X = torch.stft(x, n_fft=n_fft, hop_length=hop, win_length=win, window=win_tensor, return_complex=True)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/functional.py", line 650, in stft
+    return _VF.stft(input, n_fft, hop_length, win_length, window,  # type: ignore[attr-defined]
+RuntimeError: cuFFT error: CUFFT_INTERNAL_ERROR
+[1;34mwandb[0m: 
+[1;34mwandb[0m: 🚀 View run [33mLatent-Consistency-Distillation-1[0m at: [34m[0m
+[1;34mwandb[0m: Find logs at: [1;35mwandb/run-20251017_104727-Latent-Consistency-Distillation-1/logs[0m
+[2025-10-17 11:33:10,181] torch.distributed.elastic.multiprocessing.api: [ERROR] failed (exitcode: 1) local_rank: 0 (pid: 1358782) of binary: /home-mscluster/onailana/miniconda3/envs/env/bin/python3.9
+Traceback (most recent call last):
+  File "/home-mscluster/onailana/miniconda3/envs/env/bin/torchrun", line 7, in <module>
+    sys.exit(main())
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+    return f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 806, in main
+    run(args)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 797, in run
+    elastic_launch(
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/home-mscluster/onailana/ASR-LCM-Research/training6.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-10-17_11:33:10
+  host      : mscluster60.ms.wits.ac.za
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1358782)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+Training complete at Fri Oct 17 11:33:10 AM SAST 2025
+/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/modules/transformer.py:380: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. (Triggered internally at ../aten/src/ATen/NestedTensorImpl.cpp:178.)
+  output = torch._nested_tensor_from_mask(output, src_key_padding_mask.logical_not(), mask_check=False)
+2025-10-17 13:17:45 | INFO | Epoch 1: train loss=4.944276 ce=4.609252 stft=0.603738 wf=0.066309 | val: {'loss': 6.679715456946796, 'ce': 6.154624476338064, 'stft': 0.9466863047849658, 'waveform': 0.10349566151776554}
+2025-10-17 15:46:29 | INFO | Epoch 2: train loss=4.586766 ce=4.369581 stft=0.377151 wf=0.057219 | val: {'loss': 6.605911516393257, 'ce': 6.1206761831479355, 'stft': 0.8681375309824944, 'waveform': 0.10233315243539924}
+2025-10-17 18:15:47 | INFO | Epoch 3: train loss=4.542048 ce=4.339921 stft=0.348095 wf=0.056158 | val: {'loss': 6.585103716479232, 'ce': 6.104984156343321, 'stft': 0.8586568045152339, 'waveform': 0.10158233375855974}
+2025-10-17 20:45:13 | INFO | Epoch 4: train loss=4.517550 ce=4.325345 stft=0.329013 wf=0.055397 | val: {'loss': 6.580891253340323, 'ce': 6.101310347287071, 'stft': 0.8531895725685634, 'waveform': 0.10597224649510636}
+2025-10-17 23:14:29 | INFO | Epoch 5: train loss=4.501287 ce=4.315692 stft=0.316373 wf=0.054816 | val: {'loss': 6.591078346336125, 'ce': 6.101229132998069, 'stft': 0.8761159680808419, 'waveform': 0.10358248880157704}
+2025-10-18 01:43:54 | INFO | Epoch 6: train loss=4.489767 ce=4.308337 stft=0.308463 wf=0.054399 | val: {'loss': 6.6080533836456326, 'ce': 6.1025568534996335, 'stft': 0.9068830712568878, 'waveform': 0.10411000471031726}
+2025-10-18 04:13:27 | INFO | Epoch 7: train loss=4.481039 ce=4.301792 stft=0.304352 wf=0.054141 | val: {'loss': 6.61121781318393, 'ce': 6.1030007405391595, 'stft': 0.9128383922063752, 'waveform': 0.10359576483263283}
+2025-10-18 06:43:03 | INFO | Epoch 8: train loss=4.473265 ce=4.294889 stft=0.302763 wf=0.053990 | val: {'loss': 6.612310422374713, 'ce': 6.104228872731821, 'stft': 0.91281022595254, 'waveform': 0.10335286436309507}
+2025-10-18 09:12:36 | INFO | Epoch 9: train loss=4.467360 ce=4.288795 stft=0.303192 wf=0.053938 | val: {'loss': 6.607513868058754, 'ce': 6.106217213221733, 'stft': 0.8991579329780001, 'waveform': 0.10343539387693888}
+2025-10-18 11:42:10 | INFO | Epoch 10: train loss=4.462358 ce=4.283165 stft=0.304455 wf=0.053930 | val: {'loss': 6.594982755105227, 'ce': 6.107486676104021, 'stft': 0.8715437851007412, 'waveform': 0.1034483890756903}
+2025-10-18 14:11:41 | INFO | Epoch 11: train loss=4.457985 ce=4.277751 stft=0.306498 wf=0.053971 | val: {'loss': 6.581136557440095, 'ce': 6.108846613310821, 'stft': 0.8364101914775293, 'waveform': 0.108169711327538}
+2025-10-18 16:41:16 | INFO | Epoch 12: train loss=4.454302 ce=4.272823 stft=0.308926 wf=0.054032 | val: {'loss': 6.616987227801456, 'ce': 6.110433885790655, 'stft': 0.9061778923064865, 'waveform': 0.10692879995130718}
+2025-10-18 19:10:50 | INFO | Epoch 13: train loss=4.451102 ce=4.268226 stft=0.311625 wf=0.054126 | val: {'loss': 6.622906059421451, 'ce': 6.112165404668707, 'stft': 0.9142605666416568, 'waveform': 0.10722077430984536}
+2025-10-18 21:40:17 | INFO | Epoch 14: train loss=4.448026 ce=4.263953 stft=0.313965 wf=0.054182 | val: {'loss': 6.621178146427041, 'ce': 6.113310241936058, 'stft': 0.9095111840361396, 'waveform': 0.10622463956712715}
+2025-10-19 00:09:55 | INFO | Epoch 15: train loss=4.445404 ce=4.259919 stft=0.316695 wf=0.054275 | val: {'loss': 6.621848190659719, 'ce': 6.1140318319497515, 'stft': 0.9088218008840321, 'waveform': 0.1068109436421686}
+2025-10-19 02:39:52 | INFO | Epoch 16: train loss=4.442820 ce=4.256246 stft=0.318827 wf=0.054320 | val: {'loss': 6.624972212985651, 'ce': 6.115640268815274, 'stft': 0.9116293538041067, 'waveform': 0.10703454550204564}
+2025-10-19 05:09:27 | INFO | Epoch 17: train loss=4.440622 ce=4.252852 stft=0.321135 wf=0.054406 | val: {'loss': 6.626957968962903, 'ce': 6.116949888846732, 'stft': 0.9134462365621565, 'waveform': 0.10656994558710432}
+2025-10-19 07:39:01 | INFO | Epoch 18: train loss=4.438524 ce=4.249639 stft=0.323285 wf=0.054484 | val: {'loss': 6.623249271650188, 'ce': 6.11809559649979, 'stft': 0.9035658901989065, 'waveform': 0.10674146694417994}
+2025-10-19 10:08:20 | INFO | Epoch 19: train loss=4.436905 ce=4.246962 stft=0.325338 wf=0.054548 | val: {'loss': 6.61801364307372, 'ce': 6.118393344397576, 'stft': 0.8928562860985269, 'waveform': 0.10638433715578366}
+slurmstepd-mscluster67: error: *** JOB 163612 ON mscluster67 CANCELLED AT 2025-10-19T10:48:37 DUE TO TIME LIMIT ***
+[2025-10-19 10:48:37,651] torch.distributed.elastic.agent.server.api: [WARNING] Received Signals.SIGTERM death signal, shutting down workers
+[2025-10-19 10:48:37,661] torch.distributed.elastic.multiprocessing.api: [WARNING] Sending process 1108218 closing signal SIGTERM
+Traceback (most recent call last):
+  File "/home-mscluster/onailana/miniconda3/envs/env/bin/torchrun", line 7, in <module>
+    sys.exit(main())
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+    return f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 806, in main
+    run(args)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 797, in run
+    elastic_launch(
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 255, in launch_agent
+    result = agent.run()
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/metrics/api.py", line 124, in wrapper
+    result = f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 736, in run
+    result = self._invoke_run(role)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 877, in _invoke_run
+    time.sleep(monitor_interval)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 62, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+torch.distributed.elastic.multiprocessing.api.SignalException: Process 1108208 got signal: 15

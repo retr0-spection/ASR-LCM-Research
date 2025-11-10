@@ -1,0 +1,90 @@
+Activating virtual environment...
+Starting Latent Consistency Model training (DDP mode)
+Job Node: mscluster60.ms.wits.ac.za
+GPUs available: 
+Fri Oct 17 10:41:21 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 565.57.01              Driver Version: 565.57.01      CUDA Version: 12.7     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 3090        Off |   00000000:17:00.0 Off |                  N/A |
+| 30%   38C    P8             26W /  350W |       4MiB /  24576MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+[2025-10-17 10:41:22,599] torch.distributed.run: [WARNING] master_addr is only used for static rdzv_backend and when rdzv_endpoint is not specified.
+slurmstepd-mscluster60: error: *** JOB 163607 ON mscluster60 CANCELLED AT 2025-10-17T10:42:29 ***
+[2025-10-17 10:42:29,787] torch.distributed.elastic.agent.server.api: [WARNING] Received Signals.SIGTERM death signal, shutting down workers
+[2025-10-17 10:42:29,788] torch.distributed.elastic.multiprocessing.api: [WARNING] Sending process 1358494 closing signal SIGTERM
+Traceback (most recent call last):
+  File "/home-mscluster/onailana/miniconda3/envs/env/bin/torchrun", line 7, in <module>
+    sys.exit(main())
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+    return f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 806, in main
+    run(args)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 797, in run
+    elastic_launch(
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 255, in launch_agent
+    result = agent.run()
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/metrics/api.py", line 124, in wrapper
+    result = f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 736, in run
+    result = self._invoke_run(role)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 877, in _invoke_run
+    time.sleep(monitor_interval)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 62, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+torch.distributed.elastic.multiprocessing.api.SignalException: Process 1358484 got signal: 15
+Detected 32 codebooks from dataset sample
+2025-10-17 10:42:41 | INFO | Logging to /datasets/onailana/checkpoints4/train_20251017_104241_rank0.log (rank 0)
+/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/nn/utils/weight_norm.py:30: UserWarning: torch.nn.utils.weight_norm is deprecated in favor of torch.nn.utils.parametrizations.weight_norm.
+  warnings.warn("torch.nn.utils.weight_norm is deprecated in favor of torch.nn.utils.parametrizations.weight_norm.")
+2025-10-17 10:42:56 | INFO | No checkpoint found; starting fresh
+wandb: Currently logged in as: ratinailana (ratinailana-university-of-the-witwatersrand) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run Latent-Consistency-Distillation
+wandb: Tracking run with wandb version 0.22.1
+wandb: Run data is saved locally in /home-mscluster/onailana/ASR-LCM-Research/scripts/wandb/run-20251017_104257-Latent-Consistency-Distillation
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Resuming run Latent-Consistency-Distillation
+wandb: ⭐️ View project at https://wandb.ai/ratinailana-university-of-the-witwatersrand/lcm-distill
+wandb: 🚀 View run at https://wandb.ai/ratinailana-university-of-the-witwatersrand/lcm-distill/runs/Latent-Consistency-Distillation
+2025-10-17 10:43:01 | INFO | Starting training: epochs=1500, per_step_batch_size=2, accum_steps=4, ddp=False
+2025-10-17 10:43:05 | INFO | Auto-scaled losses: lambda_stft=0.5000, lambda_waveform=0.5000
+slurmstepd-mscluster67: error: *** JOB 163608 ON mscluster67 CANCELLED AT 2025-10-17T10:45:42 ***
+[2025-10-17 10:45:42,011] torch.distributed.elastic.agent.server.api: [WARNING] Received Signals.SIGTERM death signal, shutting down workers
+[2025-10-17 10:45:42,012] torch.distributed.elastic.multiprocessing.api: [WARNING] Sending process 1108052 closing signal SIGTERM
+Traceback (most recent call last):
+  File "/home-mscluster/onailana/miniconda3/envs/env/bin/torchrun", line 7, in <module>
+    sys.exit(main())
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+    return f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 806, in main
+    run(args)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/run.py", line 797, in run
+    elastic_launch(
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/launcher/api.py", line 255, in launch_agent
+    result = agent.run()
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/metrics/api.py", line 124, in wrapper
+    result = f(*args, **kwargs)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 736, in run
+    result = self._invoke_run(role)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/agent/server/api.py", line 877, in _invoke_run
+    time.sleep(monitor_interval)
+  File "/home-mscluster/onailana/miniconda3/envs/env/lib/python3.9/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 62, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+torch.distributed.elastic.multiprocessing.api.SignalException: Process 1108042 got signal: 15

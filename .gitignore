@@ -8,4 +8,5 @@ code_data.csv
 train-clean-100.tar.gz
 VCTK-Corpus-0.92.zip
 .DS_Store
+scripts/wandb
 training_data.zip

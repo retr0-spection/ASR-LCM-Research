@@ -9,6 +9,7 @@ DDP-safe LCM training with:
  - AMP (autocast + GradScaler)
  - gradient accumulation with DDP no_sync()
  - synchronized OOM handling across ranks (reduces batch size and restarts epoch)
+ - automatic initial loss scaling
 """
 import os
 import sys
@@ -215,7 +216,7 @@ def validate_one_epoch(val_loader, model, device, encodec_model, n_codebooks, la
     return {"loss": total/count, "ce": total_ce/count, "stft": total_stft/count, "waveform": total_wf/count}
 
 # ---------------------------
-# Training (with synchronized OOM handling + AMP + accumulation)
+# Training (with synchronized OOM handling + AMP + accumulation + auto scaling)
 # ---------------------------
 def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_rank, world_size, is_ddp):
     logger = setup_logging(args.checkpoint_dir, rank=rank)
@@ -225,7 +226,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
     if not hasattr(args, "accum_steps"):
         args.accum_steps = 4
 
-    # helper to build train loader (recreated if batch size changes)
     def make_train_loader():
         return DataLoader(dataset, batch_size=args.batch_size, sampler=train_sampler, collate_fn=collate_fn)
 
@@ -233,7 +233,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
     val_loader = DataLoader(val_dataset, batch_size=args.val_batch_size, sampler=DistributedSampler(val_dataset) if is_ddp and val_dataset is not None else None, collate_fn=collate_fn) if val_dataset is not None else None
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=getattr(args, "weight_decay", 0.0))
-    # lambda scheduler: warmup then linear decay
     warmup_steps = getattr(args, "warmup_steps", 500)
     def lr_lambda(step):
         if step < warmup_steps:
@@ -248,7 +247,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
     stft_fn = MultiResolutionSTFTLoss()
     wf_fn = WaveformL1Loss()
 
-    # resume
     start_epoch = 0
     if getattr(args, "resume", False):
         ckpt = latest_checkpoint(args.checkpoint_dir)
@@ -264,11 +262,12 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
             logger.info("No checkpoint found; starting fresh")
 
     if rank == 0:
-        wandb.init(project=getattr(args, "wandb_project", "lcm-distill"), id="Latent-Consistency-Distillation", config=vars(args), resume="allow" if getattr(args, "resume", False) else None)
+        wandb.init(project=getattr(args, "wandb_project", "lcm-distill"), id="Latent-Consistency-Distillation-3", config=vars(args), resume="allow" if getattr(args, "resume", False) else None)
         wandb.watch(model, log="gradients" if getattr(args, "log_grads", False) else None)
 
     scaler = torch.cuda.amp.GradScaler()
     accum_steps = int(getattr(args, "accum_steps", 4))
+    first_batch = True
 
     logger.info(f"Starting training: epochs={args.epochs}, per_step_batch_size={args.batch_size}, accum_steps={accum_steps}, ddp={is_ddp}")
 
@@ -276,49 +275,46 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
         if is_ddp:
             train_sampler.set_epoch(epoch) if train_sampler is not None else None
         model.train()
-
-        # Create fresh loader in case it was recreated after OOM
         train_loader = make_train_loader()
 
         epoch_loss = epoch_ce = epoch_stft = epoch_wf = epoch_count = 0.0
         restart_epoch = False
-
         optimizer.zero_grad()
-        # iterate with index to enable no_sync decisions
+
         for batch_idx, (degraded, teacher, mask) in enumerate(train_loader):
             degraded, teacher, mask = degraded.to(device), teacher.to(device), mask.to(device)
-
-            # choose no_sync context for DDP when not stepping this iter
             use_no_sync = is_ddp and ((batch_idx + 1) % accum_steps != 0)
             ddp_ctx = model.no_sync if use_no_sync else nullcontext
 
             try:
                 with ddp_ctx():
                     with torch.cuda.amp.autocast():
-                        logits = model(degraded, attention_mask=mask)  # [B, S, vocab, n_codebooks]
-                        ce_loss = 0.0
-                        for i in range(n_codebooks):
-                            ce_loss += F.cross_entropy(logits[..., i].transpose(1,2), teacher[..., i], reduction='mean')
-                        ce_loss = ce_loss / float(n_codebooks)
-
-                        # decode under no_grad()
+                        logits = model(degraded, attention_mask=mask)
+                        ce_loss = sum(F.cross_entropy(logits[..., i].transpose(1,2), teacher[..., i], reduction='mean') for i in range(n_codebooks)) / n_codebooks
                         pred_tokens = torch.argmax(logits, dim=2).transpose(1,2)
                         teacher_codes = teacher.transpose(1,2)
                         with torch.no_grad():
                             pred_wav = encodec_model.decode([(pred_tokens, None)])
                             teacher_wav = encodec_model.decode([(teacher_codes, None)])
-
-                        # compute audio losses (detached from autograd)
                         stft_loss = stft_fn(pred_wav, teacher_wav).detach()
                         wf_loss = wf_fn(pred_wav, teacher_wav).detach()
 
-                        # combine losses but scale CE for accumulation
+                        # ---- AUTO SCALING ----
+                        if first_batch:
+                            if not hasattr(args, "lambda_stft") or args.lambda_stft is None:
+                                args.lambda_stft = ce_loss.item() / (stft_loss.item() + 1e-8)
+                            if not hasattr(args, "lambda_waveform") or args.lambda_waveform is None:
+                                args.lambda_waveform = ce_loss.item() / (wf_loss.item() + 1e-8)
+                            first_batch = False
+                            logger.info(f"Auto-scaled losses: lambda_stft={args.lambda_stft:.4f}, lambda_waveform={args.lambda_waveform:.4f}")
+                            if rank == 0:
+                                wandb.log({"lambda_stft": args.lambda_stft, "lambda_waveform": args.lambda_waveform})
+
                         loss = ce_loss + args.lambda_waveform * wf_loss + args.lambda_stft * stft_loss
                         loss_scaled = loss / accum_steps
 
                     scaler.scale(loss_scaled).backward()
 
-                # Step when accumulation boundary reached
                 is_last_step = (batch_idx + 1 == len(train_loader))
                 if ((batch_idx + 1) % accum_steps == 0) or is_last_step:
                     scaler.step(optimizer)
@@ -334,19 +330,14 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
                 epoch_count += bsz
 
             except RuntimeError as e:
-                # Detect OOM
                 oom = ("out of memory" in str(e).lower()) or ("cuda out of memory" in str(e).lower())
                 if not oom:
                     raise
 
-                # free what we can locally
                 logging.warning(f"OOM at epoch {epoch} batch {batch_idx}: {e}")
                 torch.cuda.empty_cache()
-
-                # signal local OOM (1) or success (0)
                 local_oom = torch.tensor([1], device=device, dtype=torch.int32)
 
-                # reduce across ranks to see if any rank OOMed
                 if is_ddp:
                     global_oom = local_oom.clone()
                     dist.all_reduce(global_oom, op=dist.ReduceOp.SUM)
@@ -355,7 +346,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
                     any_oom = True
 
                 if any_oom:
-                    # rank 0 decides the new batch size (halved)
                     if is_ddp:
                         if rank == 0:
                             new_bs = max(1, args.batch_size // 2)
@@ -368,21 +358,17 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
                         new_bs = max(1, args.batch_size // 2)
 
                     if new_bs < args.batch_size:
-                        logging.warning(f"Synchronized decision: reducing per_step_batch_size {args.per_step_batch_size} -> {new_bs}")
+                        logging.warning(f"Synchronized decision: reducing per_step_batch_size {args.batch_size} -> {new_bs}")
                         args.batch_size = new_bs
-                        # recreate loader in next epoch loop
                         restart_epoch = True
                         break
                     else:
-                        # already at 1 and still OOM -> abort training
                         logging.error("OOM at per_step_batch_size==1 on all ranks; cannot recover. Aborting.")
                         raise e
 
         if restart_epoch:
-            # continue to next epoch iteration which will rebuild loader and retry same epoch
             continue
 
-        # Aggregate epoch stats across ranks
         if is_ddp:
             stats = torch.tensor([epoch_loss, epoch_ce, epoch_stft, epoch_wf, epoch_count], device=device)
             dist.all_reduce(stats, op=dist.ReduceOp.SUM)
@@ -393,7 +379,6 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
         avg_stft = epoch_stft / epoch_count if epoch_count > 0 else 0.0
         avg_wf = epoch_wf / epoch_count if epoch_count > 0 else 0.0
 
-        # validation
         val_metrics = None
         if val_loader is not None:
             val_metrics = validate_one_epoch(val_loader, model, device, encodec_model, n_codebooks=args.n_codebooks, lambda_waveform=args.lambda_waveform, lambda_stft=args.lambda_stft, is_ddp=is_ddp)
@@ -418,3 +403,4 @@ def train(dataset, model, train_sampler, val_dataset, args, device, rank, local_
             })
 
     logger.info("Training finished")
+

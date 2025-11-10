@@ -1,0 +1,23 @@
+=== Starting SLURM Job ===
+Job ID: 163393
+Running on node(s): mscluster106
+CUDA_VISIBLE_DEVICES: 
+Virtual environment activated
+Working directory: /home-mscluster/onailana/ASR-LCM-Research
+Python path: /home-mscluster/onailana/miniconda3/envs/env/bin/python
+Python 3.9.23
+GPUs visible to PyTorch:
+2 GPUs available
+0 Quadro RTX 8000
+1 Quadro RTX 8000
+=== Starting Training ===
+[Rank 0/2] Using device: cuda:0
+[Rank 0] Process group initialized
+Detected 32 codebooks from dataset sample
+[Rank 1/2] Using device: cuda:1
+[Rank 1] Process group initialized
+Detected 32 codebooks from dataset sample
+[Rank 1] Model wrapped in DDP
+[Rank 0] Model wrapped in DDP
+Training finished with exit code: 1
+=== ERROR: Training script failed! See .err log for details. ===

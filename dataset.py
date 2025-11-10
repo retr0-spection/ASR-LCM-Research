@@ -11,6 +11,4 @@ class LCMDistillDataset(Dataset):
 
     def __getitem__(self, idx):
         item = torch.load(self.df.iloc[idx]["filepath"])
-        return item["degraded"], item["teacher"]  # (input, target)
-
-dataset = LCMDistillDataset('code_data.csv')
+        return item["degraded"], item["teacher"], item["mask"]  # (input, target)
