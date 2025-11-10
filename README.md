@@ -24,7 +24,7 @@ The model achieves real-time inference, maintaining perceptual quality comparabl
 The proposed **LCM-MCB (Latent Consistency Model with Multi-Codebook Blocks)** operates directly on EnCodec’s discrete latent tokens instead of raw waveforms.
 
 <p align="center">
-  <img src="assets/lcm_architecture.png" alt="LCM Architecture Diagram" width="700"/>
+  <img src="assets/transformer_architecture.png" alt="LCM Architecture Diagram" width="700"/>
 </p>
 
 ### 🔹 Workflow
@@ -45,7 +45,7 @@ The proposed **LCM-MCB (Latent Consistency Model with Multi-Codebook Blocks)** o
 - **Optimizer:** AdamW (lr = 2×10⁻⁴)
 
 <p align="center">
-  <img src="assets/training_loss.png" alt="Training and Validation Loss" width="600"/>
+  <img src="assets/loss_plot.png" alt="Training and Validation Loss" width="600"/>
 </p>
 
 ---
