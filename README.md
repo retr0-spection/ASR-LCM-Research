@@ -64,11 +64,11 @@ The proposed **LCM-MCB (Latent Consistency Model with Multi-Codebook Blocks)** o
 ### 🎛 SI-SDR and STOI Trends
 
 <p align="center">
-  <img src="assets/si_sdr_comparison.png" alt="SI-SDR Comparison" width="600"/>
+  <img src="assets/si_sdr_plot.png" alt="SI-SDR Comparison" width="600"/>
 </p>
 
 <p align="center">
-  <img src="assets/stoi_comparison.png" alt="STOI Comparison" width="600"/>
+  <img src="assets/stoi_plot.png" alt="STOI Comparison" width="600"/>
 </p>
 
 ---
