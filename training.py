@@ -1,6 +1,6 @@
 # training.py
 import argparse
-from lcm2 import train_lcm  # your LCM training function
+from lcm import train_lcm  # your LCM training function
 
 def main():
     parser = argparse.ArgumentParser(description="Train Latent Consistency Model on Encodec codes")
@@ -36,4 +36,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -4,23 +4,23 @@
 #SBATCH --partition=bigbatch
 #SBATCH --nodes=1
 
-
 source ~/.bashrc
-echo "Virt env active"
 conda activate env
-echo "Training LCM Model"
 
+MASTER_ADDR=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
+MASTER_PORT=29500
 
-torchrun  ~/ASR-LCM-Research/training3.py --csv_path /datasets/onailana/codes/code_data.csv \
-  --val_csv_path  /datasets/onailana/test_codes/test_code_data.csv \
+torchrun ~/ASR-LCM-Research/training2.py \
+  --csv_path /datasets/onailana/codes/code_data.csv \
+  --val_csv_path /datasets/onailana/test_codes/test_code_data.csv \
   --val_batch_size 2 \
   --d_model 256 \
-  --n_heads 4 \
-  --num_layers 8 \
+  --n_heads 8 \
+  --num_layers 6 \
   --batch_size 2 \
   --effective_batch_size 2 \
   --max_batch_size 2 \
-  --epochs 1500 \
+  --epochs 32 \
   --lr 1e-4 \
   --checkpoint_dir /datasets/onailana/checkpoints1 \
   --save_every 1 \
